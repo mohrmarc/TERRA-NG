@@ -18,8 +18,20 @@ endif ()
 # Make sure the serial backend is always build
 set(Kokkos_ENABLE_SERIAL ON CACHE BOOL "Always enable Serial backend" FORCE)
 
-# Find Kokkos
-# find_package(Kokkos REQUIRED)
+# Optionally build against ADIOS2 for I/O
+option( TNG_BUILD_WITH_ADIOS2 "Build with ADIOS2" OFF )
+
+if( TNG_BUILD_WITH_ADIOS2 )
+
+  # We need an ADIOS2 installation built against a matching Kokkos installation, so we
+  # enforce using an external Kokkos here
+  set( TNG_USE_EXTERNAL_KOKKOS ON CACHE BOOL "Use an external installation of Kokkos" FORCE)
+  find_package( Kokkos REQUIRED )
+
+  # Find ADIOS2
+  find_package( ADIOS2 REQUIRED COMPONENTS CXX MPI )
+
+endif()
 
 # Always make compiler output coloured by default
 set( TNG_COLOUR_COMPILER_OUTPUT ON CACHE BOOL "Make compiler messages use colour" )
