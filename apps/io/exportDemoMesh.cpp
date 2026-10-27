@@ -1,7 +1,6 @@
 
 #include <fstream>
 #include <iomanip>
-#include <linalg/vector_q1.hpp>
 #include <optional>
 
 #include "terra/grid/shell/spherical_shell.hpp"
@@ -11,6 +10,9 @@
 #include "util/filesystem.hpp"
 #include "util/init.hpp"
 #include "util/logging.hpp"
+
+#include <adios2.h>
+#include <adios2/cxx/KokkosView.h>
 
 int main( int argc, char** argv )
 {
@@ -22,12 +24,19 @@ int main( int argc, char** argv )
   // const auto description = "Visualize Spherical Harmonics - XDMF output of coefficient grids.";
   // logroot << "\n" << description << "\n\n";
 
-  const auto domain = terra::grid::shell::DistributedDomain::create_uniform( 1,
-                                                                             0,
-                                                                             1.0,
-                                                                             2.0,
-                                                                             1,
-                                                                             0,
+  const int lateral_diamond_refinement_level = 1;
+  const int radial_diamond_refinement_level = 0;
+  const double rmin = 1.0;
+  const double rmax = 2.0;
+  const int lateral_subdomain_refinement_level = 0;
+  const int radial_subdomain_refinement_level = 0;
+
+  const auto domain = terra::grid::shell::DistributedDomain::create_uniform( lateral_diamond_refinement_level,
+                                                                             radial_diamond_refinement_level,
+                                                                             rmin,
+                                                                             rmax,
+                                                                             lateral_subdomain_refinement_level,
+                                                                             radial_subdomain_refinement_level,
                                                                              terra::grid::shell::subdomain_to_rank_iterate_diamond_subdomains );
   const auto subdomain_shell_coords =
     terra::grid::shell::subdomain_unit_sphere_single_shell_coords< double >( domain );
