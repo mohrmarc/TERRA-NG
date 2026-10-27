@@ -11,6 +11,7 @@ target_include_directories(terra PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_sources(terra
         PRIVATE
         library_dummy.cpp
+	terra_definitions.in.hpp
         types.hpp)
 
 if(NESMIK_HOME)
@@ -19,6 +20,11 @@ if(NESMIK_HOME)
 	target_link_libraries(terra PUBLIC nesmik)
         target_compile_definitions(terra PUBLIC TERRANEO_USE_NESMIK)
 endif()
+
+# Generate preprocessor macros from TNG options
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/terra_definitions.in.hpp
+                ${CMAKE_CURRENT_BINARY_DIR}/terra_definitions.hpp )
+target_include_directories( terra PUBLIC ${CMAKE_CURRENT_BINARY_DIR} )
 
 add_subdirectory(communication)
 add_subdirectory(dense)
