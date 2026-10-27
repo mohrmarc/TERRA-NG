@@ -1,6 +1,11 @@
 add_library(terra)
 
 target_link_libraries(terra PUBLIC Kokkos::kokkos MPI::MPI_CXX)
+
+if( TNG_BUILD_WITH_ADIOS2 )
+  target_link_libraries(terra PUBLIC adios2::cxx_mpi)
+endif()
+
 target_include_directories(terra PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_sources(terra
