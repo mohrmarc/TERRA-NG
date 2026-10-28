@@ -83,6 +83,18 @@ set(EIGEN_DIR extern/eigen-3.4.0 CACHE PATH "eigen path")
 include_directories(SYSTEM ${EIGEN_DIR})
 link_directories(${EIGEN_DIR})
 
+# Check if both CUDA/NVHPC and OpenMP are being used and enforce correct openmp flag for GCC
+if( CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC" AND Kokkos_ENABLE_OPENMP )
+  if( TARGET OpenMP::OpenMP_CXX )
+    set_target_properties( OpenMP::OpenMP_CXX PROPERTIES
+      INTERFACE_COMPILE_OPTIONS "-Xcompiler;-fopenmp"
+    )
+    message( STATUS "Overriding properties of target OpenMP::OpenMP_CXX with '-Xcompiler;-fopenmp'" )
+  endif()
+  # It seems that OpenMP_CXX_FLAGS doesn't get used anymore (but better safe than sorry)
+  set( OpenMP_CXX_FLAGS "-Xcompiler -fopenmp" CACHE STRING "Flags used by the CXX compiler during OpenMP builds" FORCE )
+endif()
+
 # Enable testing
 enable_testing()
 
