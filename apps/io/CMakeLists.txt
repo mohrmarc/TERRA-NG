@@ -9,4 +9,4 @@ function(add_terra_tool name)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
-add_terra_tool(exportDemoMesh)
+add_terra_tool( adios2demo )
