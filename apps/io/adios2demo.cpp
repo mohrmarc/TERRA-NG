@@ -9,13 +9,14 @@
 #include "terra/grid/shell/spherical_shell.hpp"
 #include "terra/io/xdmf.hpp"
 #include "terra/shell/spherical_harmonics.hpp"
+#include "util/bit_masking.hpp"
 #include "util/filesystem.hpp"
 #include "util/init.hpp"
 #include "util/logging.hpp"
 
 int main( int argc, char** argv )
 {
-    using namespace terra::util;
+    using terra::util::logroot;
 
     terra::util::terra_initialize( &argc, &argv );
 
@@ -26,11 +27,11 @@ int main( int argc, char** argv )
     //  MESH AND SUBDOMAIN SETUP
     // ==========================
     const int    lateral_diamond_refinement_level   = 2;
-    const int    radial_diamond_refinement_level    = 1;
+    const int    radial_diamond_refinement_level    = 0;
     const double rmin                               = 1.0;
     const double rmax                               = 2.0;
-    const int    lateral_subdomain_refinement_level = 0;
-    const int    radial_subdomain_refinement_level  = 1;
+    const int    lateral_subdomain_refinement_level = 1;
+    const int    radial_subdomain_refinement_level  = 0;
 
     const auto domain = terra::grid::shell::DistributedDomain::create_uniform(
         lateral_diamond_refinement_level,
@@ -58,6 +59,9 @@ int main( int argc, char** argv )
     logroot << "Subdomains have:\n- ntan_subdomain = " << ntan_subdomain << "\n- nrad_subdomain = " << nrad_subdomain
             << '\n';
 
+    const size_t num_nodes_per_subdomain = ( ntan_subdomain + 1 ) * ( ntan_subdomain + 1 ) * ( nrad_subdomain + 1 );
+    logroot << "- # of nodes (including duplicates) = " << num_nodes_per_subdomain << '\n';
+
     // ===============================
     //  PREPARING SOME DATA TO EXPORT
     // ===============================
@@ -74,9 +78,12 @@ int main( int argc, char** argv )
             "diamond_interpolation",
             terra::grid::shell::local_domain_md_range_policy_nodes( domain ),
             KOKKOS_LAMBDA( int local_subdomain_idx, int x, int y, int r ) {
-                if ( local_subdomain_idx == local_subdomain_id )
+                if ( local_subdomain_idx == local_subdomain_id &&
+                     terra::util::has_flag(
+                         mask_data( local_subdomain_id, x, y, r ), terra::grid::NodeOwnershipFlag::OWNED ) )
                 {
                     grid_diamond_id( local_subdomain_idx, x, y, r ) = diamond_id;
+                    grid_diamond_id( local_subdomain_idx, x, y, r ) = 1;
                     // grid_diamond_id( local_subdomain_idx, x, y, r ) = diamond_id == 0 ? 0 : 2;
                 }
             } );
