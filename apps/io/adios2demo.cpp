@@ -30,7 +30,7 @@ int main( int argc, char** argv )
     const int    radial_diamond_refinement_level    = 0;
     const double rmin                               = 1.0;
     const double rmax                               = 2.0;
-    const int    lateral_subdomain_refinement_level = 1;
+    const int    lateral_subdomain_refinement_level = 0;
     const int    radial_subdomain_refinement_level  = 0;
 
     const auto domain = terra::grid::shell::DistributedDomain::create_uniform(
@@ -83,11 +83,13 @@ int main( int argc, char** argv )
                          mask_data( local_subdomain_id, x, y, r ), terra::grid::NodeOwnershipFlag::OWNED ) )
                 {
                     grid_diamond_id( local_subdomain_idx, x, y, r ) = diamond_id;
-                    grid_diamond_id( local_subdomain_idx, x, y, r ) = 1;
-                    // grid_diamond_id( local_subdomain_idx, x, y, r ) = diamond_id == 0 ? 0 : 2;
                 }
             } );
     }
+
+    // ensure data is consistent on duplicated nodes on all subdomains
+    terra::communication::shell::send_recv(
+        domain, grid_diamond_id, terra::communication::CommunicationReduction::MAX );
 
     // =======================
     //  EXPORT DATA WITH XDMF
@@ -145,9 +147,8 @@ int main( int argc, char** argv )
         // logroot << "slice.extent(1) = " << slice.extent( 1 ) << '\n';
         // logroot << "slice.extent(2) = " << slice.extent( 2 ) << '\n';
 
-        bp_writer.Put( varGlobalArray, slice, adios2::Mode::Sync );
-
-        // NOTE: Problem, how do we ensure that the correct data are in the BP file for the nodes that overlap ?????
+        // bp_writer.Put( varGlobalArray, slice, adios2::Mode::Sync );
+        bp_writer.Put( varGlobalArray, slice, adios2::Mode::Deferred );
     }
 
     bp_writer.Close();
