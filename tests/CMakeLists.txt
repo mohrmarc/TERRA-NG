@@ -29,6 +29,7 @@ function(add_terra_test name)
 
 
     add_test(NAME ${name}_np_${num_mpi_procs} COMMAND ${MPIEXEC_EXECUTABLE} -np ${num_mpi_procs} ./${name})
+    set_tests_properties( ${name}_np_${num_mpi_procs} PROPERTIES LABELS "Testsuite")
 
     # Add to global test list
     list(APPEND tests ${name})

@@ -6,7 +6,9 @@ function(add_terra_performance_benchmark name)
         target_link_libraries(${name} terra)
     endif ()
     target_include_directories(${name} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
     add_test(NAME ${name} COMMAND ${name})
+    set_tests_properties( ${name} PROPERTIES LABELS "Benchmarks-Performance")
 endfunction()
 
 add_terra_performance_benchmark(benchmark_alt)
