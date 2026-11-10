@@ -9,10 +9,73 @@
 #include "terra/grid/shell/spherical_shell.hpp"
 #include "terra/io/xdmf.hpp"
 #include "terra/shell/spherical_harmonics.hpp"
+#include "terra/util/cli11_helper.hpp"
+#include "terra/util/cli11_wrapper.hpp"
 #include "util/bit_masking.hpp"
 #include "util/filesystem.hpp"
 #include "util/init.hpp"
 #include "util/logging.hpp"
+
+// steering parameters for the app
+struct steering_params_t
+{
+    std::string bp_name;
+
+    int lateral_diamond_refinement_level   = 0;
+    int radial_diamond_refinement_level    = 0;
+    int lateral_subdomain_refinement_level = 0;
+    int radial_subdomain_refinement_level  = 0;
+};
+
+void process_command_line( CLI::App& app, steering_params_t& params, int argc, char** argv )
+{
+    app.set_config( "-i,--config" );
+
+    app.add_option(
+           "--lateral-refinement-level",
+           params.lateral_diamond_refinement_level,
+           "lateral refinement level per diamond" )
+        ->required();
+
+    app.add_option(
+           "--radial-refinement-level", params.radial_diamond_refinement_level, "radial refinement level per diamond" )
+        ->required();
+
+    app.add_option(
+           "--lateral-refinement-level-subdom",
+           params.lateral_subdomain_refinement_level,
+           "lateral refinement level per subdomain" )
+        ->required();
+
+    app.add_option(
+           "--radial-refinement-level-subdom",
+           params.radial_subdomain_refinement_level,
+           "radial refinement level per subdomain" )
+        ->required();
+
+    app.add_option( "-o,--bp-name", params.bp_name, "name for BP5 output" )->required();
+
+    // parse arguments
+    try
+    {
+        app.parse( argc, argv );
+    }
+    catch ( const CLI::ParseError& e )
+    {
+        app.exit( e );
+        if ( e.get_exit_code() == static_cast< int >( CLI::ExitCodes::Success ) )
+        {
+            // std::cout << app.help();
+            std::exit( EXIT_SUCCESS );
+        }
+        std::cout << "Problem with parsing CLI. Exit code " << e.get_exit_code() << std::endl;
+        std::exit( EXIT_FAILURE );
+    }
+    app.parse( argc, argv );
+
+    // print overview
+    terra::util::print_cli_summary( app, std::cout );
+}
 
 int main( int argc, char** argv )
 {
@@ -20,18 +83,22 @@ int main( int argc, char** argv )
 
     terra::util::terra_initialize( &argc, &argv );
 
+    CLI::App          app{ "Parameters for ADIOS2 demo app" };
+    steering_params_t params;
+    process_command_line( app, params, argc, argv );
+
     const auto description = "Testing data export via ADIOS2";
     logroot << "\n" << description << "\n\n";
 
     // ==========================
     //  MESH AND SUBDOMAIN SETUP
     // ==========================
-    const int    lateral_diamond_refinement_level   = 2;
-    const int    radial_diamond_refinement_level    = 0;
-    const double rmin                               = 1.0;
-    const double rmax                               = 2.0;
-    const int    lateral_subdomain_refinement_level = 0;
-    const int    radial_subdomain_refinement_level  = 0;
+    const int    lateral_diamond_refinement_level = app.get_option( "--lateral-refinement-level" )->as< int >();
+    const int    radial_diamond_refinement_level  = app.get_option( "--radial-refinement-level" )->as< int >();
+    const double rmin                             = 1.0;
+    const double rmax                             = 2.0;
+    const int lateral_subdomain_refinement_level  = app.get_option( "--lateral-refinement-level-subdom" )->as< int >();
+    const int radial_subdomain_refinement_level   = app.get_option( "--radial-refinement-level-subdom" )->as< int >();
 
     const auto domain = terra::grid::shell::DistributedDomain::create_uniform(
         lateral_diamond_refinement_level,
@@ -104,13 +171,11 @@ int main( int argc, char** argv )
     //  EXPORT DATA WITH ADIOS2
     // =========================
 
-    std::string bp_filename = "Adios2Demo.bp";
-
     // setup ADIOS2
     adios2::ADIOS adios( MPI_COMM_WORLD );
     adios2::IO    io = adios.DeclareIO( "Adios2Writer" );
     io.SetEngine( "BPFile" );
-    adios2::Engine bp_writer = io.Open( bp_filename, adios2::Mode::Write );
+    adios2::Engine bp_writer = io.Open( params.bp_name, adios2::Mode::Write );
 
     // define our variable
     const adios2::Dims shape{ 10u, ntan + 1u, ntan + 1u, nrad + 1u };

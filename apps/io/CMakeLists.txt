@@ -10,3 +10,8 @@ function(add_terra_tool name)
 endfunction()
 
 add_terra_tool( adios2demo )
+
+file( CREATE_LINK
+  ${CMAKE_CURRENT_SOURCE_DIR}/params.toml
+  ${CMAKE_CURRENT_BINARY_DIR}/params.toml
+  SYMBOLIC )

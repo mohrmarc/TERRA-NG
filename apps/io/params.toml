@@ -1,0 +1,14 @@
+# lateral refinement level per diamond
+lateral-refinement-level=2
+
+# radial refinement level per diamond
+radial-refinement-level=2
+
+# lateral refinement level per subdomain
+lateral-refinement-level-subdom=1
+
+# radial refinement level per subdomain
+radial-refinement-level-subdom=1
+
+# name for BP5 output
+bp-name="demo.bp"
